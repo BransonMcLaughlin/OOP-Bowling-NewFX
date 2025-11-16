@@ -10,8 +10,9 @@ public class Bracket {
     }
 
     public void recordWinner(Team winner) {
-        if (!advancingTeams.contains(winner))
+        if (!advancingTeams.contains(winner)) {
             advancingTeams.add(winner);
+        }
     }
 
     public List<Team> getAdvancingTeams() {
@@ -21,7 +22,11 @@ public class Bracket {
     public void printBracket() {
         System.out.println("Current Bracket:");
         for (Team t : teams) {
-            System.out.println(t.getName() + (advancingTeams.contains(t) ? " (advanced)" : ""));
+            String line = t.getName();
+            if (advancingTeams.contains(t)) {
+                line += " (advanced)";
+            }
+            System.out.println(line);
         }
     }
 
@@ -30,6 +35,9 @@ public class Bracket {
     }
 
     public Team getChampion() {
-        return isFinal() ? advancingTeams.get(0) : null;
+        if (isFinal()) {
+            return advancingTeams.get(0);
+        }
+        return null;
     }
 }

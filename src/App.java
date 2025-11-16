@@ -20,12 +20,14 @@ public class App extends Application {
     private Label statusLabel = new Label();
     private Label nowLabel = new Label();
     private Label winnerLabel = new Label();
-    private VBox scorePane = new VBox(10);
+    private VBox scorePane = new VBox(8);
     private Button rollBtn;
 
     @Override
     public void start(Stage stage) {
-        teams = setupTeams();
+        teams = Arrays.asList(
+                new Team("Pump Theorists", Arrays.asList(new Player("Branson", null), new Player("Jordan", null))),
+                new Team("Class Skippers", Arrays.asList(new Player("Hamza", null), new Player("Gage", null))));
         playerScores = new HashMap<>();
         for (Team t : teams)
             for (Player p : t.getPlayers())
@@ -35,145 +37,114 @@ public class App extends Application {
         Node rackView = rack.getView();
 
         rollBtn = new Button("Roll");
-        rollBtn.setStyle("-fx-font-size:42px; -fx-padding:25px 80px; -fx-background-color:#4CAF50; -fx-text-fill:white; -fx-font-weight:bold;");
         rollBtn.setOnAction(e -> nextRoll());
 
-        statusLabel.setStyle("-fx-font-size:18px; -fx-padding:10px; -fx-text-alignment:center;");
         statusLabel.setWrapText(true);
         statusLabel.setMaxWidth(600);
-        statusLabel.setAlignment(Pos.CENTER);
 
-        nowLabel.setStyle("-fx-font-size:32px; -fx-padding:15px; -fx-font-weight:bold;");
-        winnerLabel.setStyle("-fx-font-size:32px; -fx-text-fill:#2196F3; -fx-font-weight:bold; -fx-padding:25px;");
+        nowLabel.setStyle("-fx-font-size:20px;");
+        winnerLabel.setStyle("-fx-font-size:20px;");
         winnerLabel.setVisible(false);
 
-        VBox centerVBox = new VBox(25, winnerLabel, nowLabel, rackView, rollBtn, statusLabel);
-        centerVBox.setAlignment(Pos.CENTER);
-        centerVBox.setStyle("-fx-padding:30px;");
+        VBox center = new VBox(12, winnerLabel, nowLabel, rackView, rollBtn, statusLabel);
+        center.setAlignment(Pos.CENTER);
+        center.setStyle("-fx-padding:20px;");
 
-        scorePane.setAlignment(Pos.TOP_LEFT);
-        scorePane.setStyle("-fx-font-size:18px; -fx-padding:20px; -fx-background-color:#f5f5f5; -fx-border-color:#cccccc; -fx-border-width:0 0 0 2;");
-        scorePane.setPrefWidth(280);
-        scorePane.setMinWidth(280);
+        scorePane.setStyle("-fx-padding:10px; -fx-background-color:#f7f7f7;");
+        scorePane.setPrefWidth(260);
 
         BorderPane root = new BorderPane();
-        root.setCenter(centerVBox);
+        root.setCenter(center);
         root.setRight(scorePane);
 
         updateGui();
 
-        Scene scene = new Scene(root, 1100, 750);
+        Scene scene = new Scene(root, 1000, 650);
         stage.setScene(scene);
-        stage.setTitle("Simple Bowling Game");
+        stage.setTitle("Bowling League Game");
         stage.show();
     }
 
-    private List<Team> setupTeams() {
-        Team t1 = new Team("Eagles", Arrays.asList(new Player("Ann", null), new Player("Bob", null)));
-        Team t2 = new Team("Sharks", Arrays.asList(new Player("Cara", null), new Player("Dan", null)));
-        return Arrays.asList(t1, t2);
-    }
-
     private void nextRoll() {
-        winnerLabel.setVisible(false); // Hide until game ends
+        winnerLabel.setVisible(false);
 
         Player current = getCurrentPlayer();
         int standing = rack.getStandingCount();
-        int pinsThisRoll = rand.nextInt(standing + 1);
-        rack.knockDownRandomPins(pinsThisRoll);
-        playerScores.get(current).roll(pinsThisRoll);
+        int knocked = rand.nextInt(standing + 1);
+        rack.knockDownRandomPins(knocked);
 
-        int framePins = playerScores.get(current).getPinsInCurrentFrame();
+        Score s = playerScores.get(current);
+        s.roll(knocked);
 
-        String msg = current.getName() + " knocked down " + pinsThisRoll + " pins";
-        if (framePins > pinsThisRoll) msg += " (total " + framePins + " this frame)";
-        msg += ".";
-        if (pinsThisRoll == 10) msg += " STRIKE!";
-        else if (pinsThisRoll == 0) msg += " Gutter Ball!";
-
-        System.out.println(msg);
+        String msg = s.getRollMessage(current.getName(), knocked);
         statusLabel.setText(msg);
+
+        if (s.isCurrentFrameComplete()) {
+            rack.resetRack();
+            advanceToNextPlayer();
+        }
 
         updateGui();
 
-        if (frameComplete(current)) {
-            rack.resetRack();
-            nextPlayer();
-        }
+        if (gameFinished())
+            finishGame();
+    }
 
-        boolean allDone = true;
+    private boolean gameFinished() {
+        for (Team t : teams)
+            for (Player p : t.getPlayers())
+                if (playerScores.get(p).getCompletedFramesCount() < 10)
+                    return false;
+        return true;
+    }
+
+    private void finishGame() {
+        Team winner = null;
+        int best = Integer.MIN_VALUE;
         for (Team t : teams) {
-            for (Player p : t.getPlayers()) {
-                if (playerScores.get(p).getCompletedFramesCount() < 10) {
-                    allDone = false;
-                    break;
-                }
+            int sum = t.getPlayers().stream().mapToInt(p -> playerScores.get(p).getScore()).sum();
+            if (sum > best) {
+                best = sum;
+                winner = t;
             }
-            if (!allDone) break;
         }
-        if (allDone) {
-            Team winner = null;
-            int best = Integer.MIN_VALUE;
-            for (Team t : teams) {
-                int sum = 0;
-                for (Player p : t.getPlayers()) sum += playerScores.get(p).getScore();
-                if (sum > best) { best = sum; winner = t; }
-            }
-            String endMsg = "🏆 Game Over! Winner: " + (winner != null ? winner.getName() : "Tie") + " (" + best + " pts)";
-            statusLabel.setText(endMsg);
-            winnerLabel.setText("🏆 " + (winner != null ? winner.getName() : "Tie") + " wins! (" + best + " pts)");
-            winnerLabel.setVisible(true);
-            System.out.println(endMsg);
-            rollBtn.setDisable(true);
-        }
+        String endMsg = "Game over — " + (winner != null ? winner.getName() : "Tie") + " wins (" + best + " pts)";
+        statusLabel.setText(endMsg);
+        winnerLabel.setText("🏆 " + (winner != null ? winner.getName() : "Tie") + " — " + best + " pts");
+        winnerLabel.setVisible(true);
+        rollBtn.setDisable(true);
     }
 
-    private boolean frameComplete(Player p) {
-        return playerScores.get(p).isCurrentFrameComplete();
-    }
-
-    private Player getCurrentPlayer() {
-        Team team = teams.get(currentTeamIdx);
-        return team.getPlayers().get(currentPlayerIdx);
-    }
-
-    private void nextPlayer() {
+    private void advanceToNextPlayer() {
         currentPlayerIdx++;
         if (currentPlayerIdx >= teams.get(currentTeamIdx).getPlayers().size()) {
             currentPlayerIdx = 0;
             currentTeamIdx = (currentTeamIdx + 1) % teams.size();
         }
-        updateGui();
+    }
+
+    private Player getCurrentPlayer() {
+        return teams.get(currentTeamIdx).getPlayers().get(currentPlayerIdx);
     }
 
     private void updateGui() {
         scorePane.getChildren().clear();
-
-        Label scoreTitleLabel = new Label("📊 SCORES");
-        scoreTitleLabel.setStyle("-fx-font-weight:bold; -fx-font-size:24px; -fx-padding:0 0 15 0;");
-        scorePane.getChildren().add(scoreTitleLabel);
+        scorePane.getChildren().add(new Label("SCORES"));
 
         for (Team t : teams) {
             int teamTotal = 0;
             Label tLabel = new Label(t.getName());
-            tLabel.setStyle("-fx-font-weight:bold; -fx-font-size:22px; -fx-padding:10 0 5 0; -fx-text-fill:#2196F3;");
             scorePane.getChildren().add(tLabel);
-
             for (Player p : t.getPlayers()) {
-                int score = playerScores.get(p).getScore();
-                teamTotal += score;
-                boolean isNow = (p == getCurrentPlayer());
-                Label pl = new Label((isNow ? "▶ " : "   ") + p.getName() + ": " + score);
-                pl.setStyle("-fx-font-size:18px; -fx-padding:3 0 3 5;" + (isNow ? " -fx-font-weight:bold; -fx-text-fill:#4CAF50;" : ""));
-                scorePane.getChildren().add(pl);
+                int sc = playerScores.get(p).getScore();
+                teamTotal += sc;
+                String now = (p == getCurrentPlayer()) ? " (Now)" : "";
+                scorePane.getChildren().add(new Label("  " + p.getName() + now + ": " + sc));
             }
-
-            Label totalLbl = new Label("Team total: " + teamTotal);
-            totalLbl.setStyle("-fx-font-size:16px; -fx-font-style:italic; -fx-padding:5 0 15 5; -fx-text-fill:#666;");
-            scorePane.getChildren().add(totalLbl);
+            scorePane.getChildren().add(new Label("  Team total: " + teamTotal));
         }
 
-        nowLabel.setText("🎳 Bowling: " + getCurrentPlayer().getName());
+        nowLabel.setText("Now bowling: " + getCurrentPlayer().getName());
     }
 
     public static void main(String[] args) {
