@@ -6,11 +6,11 @@ public class Score {
     private int completedFrames = 0;
     private boolean firstRollInFrame = true;
     private int firstRollPins = 0;
-    private boolean wasFirstRollInFrame = true; // Track previous state
+    private boolean wasFirstRollInFrame = true;
 
     public void roll(int pins) {
         rolls.add(pins);
-        wasFirstRollInFrame = firstRollInFrame; // remember previous frame state
+        wasFirstRollInFrame = firstRollInFrame; 
         if (firstRollInFrame) {
             firstRollPins = pins;
             if (pins == 10) completedFrames++;
@@ -53,7 +53,6 @@ public class Score {
 
     public String getRollMessage(String playerName, int pinsKnocked) {
         if (!wasFirstRollInFrame) {
-            if (firstRollPins + pinsKnocked == 10) return playerName + " got a SPARE!";
             if (pinsKnocked == 0) return playerName + " rolled a gutter ball.";
             return playerName + " knocked down " + pinsKnocked + " pins.";
         } else {
