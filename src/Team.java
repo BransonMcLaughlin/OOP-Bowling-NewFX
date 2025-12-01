@@ -9,6 +9,10 @@ public class Team {
         this.name = name;
         this.players = players;
         this.score = 0;
+        
+        for (Player p : players) {
+            p.setTeam(this);
+        }
     }
 
     public String getName() {
