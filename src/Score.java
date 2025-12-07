@@ -7,17 +7,25 @@ public class Score {
 
     public Score() {
         this.frames = new ArrayList<>();
-        // Start with the first frame
-        frames.add(new Frame());
+        // Start with the first frame (index 0), which is NOT final
+        frames.add(new Frame(false));
         currentFrameIndex = 0;
     }
 
     public void roll(int pins) {
         Frame current = frames.get(currentFrameIndex);
 
-        // If the current frame is done, create a new one and move pointer
+        // If the current frame is done, move to the next one
         if (current.isComplete()) {
-            Frame nextFrame = new Frame();
+            // Do not create more than 10 frames
+            if (frames.size() >= 10) {
+                return;
+            }
+
+            // Check if the NEW frame will be the 10th frame (index 9)
+            boolean isNextFinal = (frames.size() == 9);
+
+            Frame nextFrame = new Frame(isNextFinal);
             frames.add(nextFrame);
             currentFrameIndex++;
             current = nextFrame;
@@ -28,25 +36,27 @@ public class Score {
 
     public int getScore() {
         int totalScore = 0;
-        
-        // We only score the first 10 frames. 
-        // Any frames after index 9 (Frame 10) are just bonus rolls/fill balls.
+        // Limit loop to 10 frames
         int limit = Math.min(frames.size(), 10);
 
         for (int i = 0; i < limit; i++) {
             Frame f = frames.get(i);
             
-            // We can't score a frame until it's complete
+            // Cannot score an incomplete frame
             if (!f.isComplete()) break;
 
             int frameScore = f.getPinCount();
 
-            if (f.isStrike()) {
-                // Strike: 10 + next 2 balls
-                frameScore += sumNextRolls(i, 2);
-            } else if (f.isSpare()) {
-                // Spare: 10 + next 1 ball
-                frameScore += sumNextRolls(i, 1);
+            // If it is frames 1-9 (index < 9), we look ahead for bonuses.
+            // If it is frame 10 (index 9), we DO NOT look ahead; the bonus is inside the frame itself.
+            if (i < 9) {
+                if (f.isStrike()) {
+                    // Strike: 10 + sum of next 2 rolls
+                    frameScore += sumNextRolls(i, 2);
+                } else if (f.isSpare()) {
+                    // Spare: 10 + sum of next 1 roll
+                    frameScore += sumNextRolls(i, 1);
+                }
             }
 
             totalScore += frameScore;
@@ -54,27 +64,25 @@ public class Score {
         return totalScore;
     }
 
-    /**
-     * Helper to look ahead at subsequent frames to calculate bonuses.
-     * This abstracts away the complexity of "Strike followed by Strike".
-     */
     private int sumNextRolls(int currentFrameIdx, int rollsToCount) {
         int sum = 0;
         int rollsFound = 0;
         
-        // Look at subsequent frames
+        // Loop through subsequent frames to find the necessary bonus rolls
         for (int i = currentFrameIdx + 1; i < frames.size() && rollsFound < rollsToCount; i++) {
             Frame next = frames.get(i);
             
-            // Add first roll
+            //Get the first roll of the next frame
             sum += next.getFirstRoll();
             rollsFound++;
             
-            // If we still need more, and the next frame has a second roll...
+            //If we still need more rolls
             if (rollsFound < rollsToCount) {
-                // Note: If next frame is a strike, getSecondRoll() returns 0, 
-                // so we continue to the NEXT frame in the loop naturally.
-                if (!next.isStrike() && next.isComplete()) {
+                // If the next frame is the 10th frame, we can take its 2nd roll regardless of strikes.
+                // If the next frame is a standard frame, we only take 2nd roll if it wasn't a strike.
+                boolean canTakeSecondRoll = (i == 9) || (!next.isStrike());
+
+                if (canTakeSecondRoll) {
                     sum += next.getSecondRoll();
                     rollsFound++;
                 }
@@ -85,7 +93,6 @@ public class Score {
 
     public int getCompletedFramesCount() {
         int count = 0;
-        // Only count up to 10 "real" frames
         for (int i = 0; i < Math.min(frames.size(), 10); i++) {
             if (frames.get(i).isComplete()) {
                 count++;
@@ -97,20 +104,16 @@ public class Score {
     public String getRollMessage(String playerName, int pinsKnocked) {
         Frame current = frames.get(currentFrameIndex);
 
-        // We determine message based on the state of the CURRENT frame
-        // If it was a strike
+        // Customize message for strikes/spares
         if (current.isStrike()) {
             return playerName + " hit a STRIKE!";
         }
-        // If it was a spare (complete, not strike, sum is 10)
         if (current.isSpare()) {
             return playerName + " got a SPARE!";
         }
-        // Gutter ball
         if (pinsKnocked == 0) {
             return playerName + " rolled a gutter ball.";
         }
-        // Standard hit
         return playerName + " knocked down " + pinsKnocked + " pins.";
     }
 
@@ -123,17 +126,45 @@ public class Score {
         if (i >= frames.size()) return " ";
 
         Frame f = frames.get(i);
-
         Integer r1 = f.getFirstRoll();
         Integer r2 = f.getSecondRoll();
+        Integer r3 = f.getThirdRoll();
 
-        // Strike
+        // formatting for 10th frame
+        if (i == 9) {
+            String s1 = (r1 == 10) ? "X" : r1.toString();
+            String s2;
+            String s3;
+
+            // Logic for 2nd slot
+            if (r2 == 10) {
+                s2 = "X";
+            } else if (!f.isStrike() && (r1 + r2 == 10)) {
+                s2 = "/"; // Spare
+            } else {
+                s2 = (r2 == 0 && !f.isComplete()) ? " " : r2.toString();
+            }
+
+            // Logic for 3rd slot (only visible if we earned it)
+            if (f.isStrike() || f.isSpare()) {
+                if (r3 == 10) {
+                    s3 = "X";
+                } else if (f.isStrike() && r2 != 10 && (r2 + r3 == 10)) {
+                    s3 = "/"; // Spare in the fill ball
+                } else {
+                    s3 = (r3 == 0 && !f.isComplete()) ? " " : r3.toString();
+                }
+            } else {
+                s3 = "";
+            }
+
+            return (s1 + " " + s2 + " " + s3).trim();
+        }
+
+        //normal format for frames 1-9
         if (f.isStrike()) return "X";
-
-        // Spare
         if (f.isSpare()) return (r1 == 0 ? "-" : r1) + " /";
 
-        // Otherwise open frame
         String a = (r1 == 0 ? "-" : r1.toString());
         String b;
 
