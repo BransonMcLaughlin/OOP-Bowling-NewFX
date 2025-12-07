@@ -118,4 +118,32 @@ public class Score {
         if (frames.isEmpty()) return false;
         return frames.get(currentFrameIndex).isComplete();
     }
+
+    public String frameToString(int i) {
+        if (i >= frames.size()) return " ";
+
+        Frame f = frames.get(i);
+
+        Integer r1 = f.getFirstRoll();
+        Integer r2 = f.getSecondRoll();
+
+        // Strike
+        if (f.isStrike()) return "X";
+
+        // Spare
+        if (f.isSpare()) return (r1 == 0 ? "-" : r1) + " /";
+
+        // Otherwise open frame
+        String a = (r1 == 0 ? "-" : r1.toString());
+        String b;
+
+        // If second roll not yet thrown -> blank
+        if (f.getSecondRoll() == 0 && !f.isComplete()) {
+            b = " ";
+        } else {
+            b = (r2 == 0 ? "-" : r2.toString());
+        }
+
+        return a + " " + b;
+    }
 }

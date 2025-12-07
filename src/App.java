@@ -15,10 +15,9 @@ import java.util.*;
 
 public class App extends Application {
     private Bracket bracket;
-    private List<Team> activeTeams; // Teams playing in the current round
+    private List<Team> activeTeams;
     private Map<Player, Score> playerScores;
-    
-    // State tracking
+
     private int currentTeamIdx = 0;
     private int currentPlayerIdx = 0;
     private RackOfPins rack;
@@ -30,27 +29,24 @@ public class App extends Application {
     private Label nowLabel = new Label();
     private Label winnerLabel = new Label();
     private VBox scorePane = new VBox(8);
-    private Button actionBtn; 
+    private Button actionBtn;
+
+    private Scoreboard scoreboard = new Scoreboard();
 
     @Override
     public void start(Stage stage) {
-        // 1. Initialize Teams
         List<Team> allTeams = Arrays.asList(
                 new Team("Pump Theorists", Arrays.asList(new Player("Branson", null), new Player("Jordan", null))),
                 new Team("Class Skippers", Arrays.asList(new Player("Hamza", null), new Player("Gage", null))),
-                new Team("Pin Pals", Arrays.asList(new Player("Alex", null), new Player("Sam", null))),
-                new Team("Lane Lizards", Arrays.asList(new Player("Chris", null), new Player("Pat", null)))
+                new Team("Hard Bowlers", Arrays.asList(new Player("Evan", null), new Player("Daniel", null))),
+                new Team("Team 4", Arrays.asList(new Player("Jacob", null), new Player("Joe", null)))
         );
-        
-        // 2. Initialize Bracket
+
         bracket = new Bracket(allTeams);
         playerScores = new HashMap<>();
         rack = new RackOfPins();
 
-        // 3. Setup GUI
         setupGui(stage);
-
-        // 4. Start the first round
         startNextRound();
     }
 
@@ -68,7 +64,7 @@ public class App extends Application {
         nowLabel.setStyle("-fx-font-size:16px; -fx-font-weight:bold;");
         winnerLabel.setStyle("-fx-font-size:24px; -fx-text-fill: green;");
         winnerLabel.setVisible(false);
-        
+
         roundLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: blue;");
 
         VBox center = new VBox(15, roundLabel, winnerLabel, nowLabel, rackView, actionBtn, statusLabel);
@@ -77,8 +73,7 @@ public class App extends Application {
 
         scorePane.setStyle("-fx-padding:10px; -fx-background-color:#f7f7f7;");
         scorePane.setPrefWidth(300);
-        
-        // Wrap scorePane in ScrollPane in case there are many teams
+
         ScrollPane rightScroll = new ScrollPane(scorePane);
         rightScroll.setFitToWidth(true);
 
@@ -86,65 +81,55 @@ public class App extends Application {
         root.setCenter(center);
         root.setRight(rightScroll);
 
-        Scene scene = new Scene(root, 1100, 700);
+        root.setBottom(scoreboard);
+
+        Scene scene = new Scene(root, 1100, 800);
         stage.setScene(scene);
         stage.setTitle("Bowling Tournament");
         stage.show();
     }
 
-    /**
-     * Resets state for a new tournament round.
-     */
     private void startNextRound() {
-        // Get the matchups for this round
         List<Matchup> matchups = bracket.getMatchups();
         activeTeams = new ArrayList<>();
-        
-        // Extract teams from matchups to build our turn order
+
         for (Matchup m : matchups) {
             activeTeams.add(m.getTeam1());
-            if (m.getTeam2() != null) {
-                activeTeams.add(m.getTeam2());
-            }
+            if (m.getTeam2() != null) activeTeams.add(m.getTeam2());
         }
 
-        // Reset scores for all active players
         playerScores.clear();
         for (Team t : activeTeams) {
-            t.setScore(0); // Reset team total
+            t.setScore(0);
             for (Player p : t.getPlayers()) {
                 playerScores.put(p, new Score());
             }
         }
 
-        // Reset indices and state
         currentTeamIdx = 0;
         currentPlayerIdx = 0;
         roundOver = false;
         rack.resetRack();
-        
-        // Update GUI
+
         roundLabel.setText("ROUND " + bracket.getRoundNumber());
         winnerLabel.setVisible(false);
         actionBtn.setText("Roll");
         actionBtn.setDisable(false);
         statusLabel.setText("Ready for Round " + bracket.getRoundNumber() + "!");
-        
+
         updateGui();
+        scoreboard.update(playerScores);
     }
 
     private void handleActionButton() {
         if (roundOver) {
-            // If round is over, button acts as "Start Next Round"
             if (bracket.isTournamentOver()) {
-                // Game completely done, maybe restart?
                 actionBtn.setDisable(true);
                 statusLabel.setText("Tournament Complete. Restart application to play again.");
             } else {
                 startNextRound();
             }
         } else {
-            // Normal gameplay
             playNextRoll();
         }
     }
@@ -161,13 +146,13 @@ public class App extends Application {
         String msg = s.getRollMessage(current.getName(), knocked);
         statusLabel.setText(msg);
 
-        // Check if frame is done
         if (s.isCurrentFrameComplete()) {
             rack.resetRack();
             advanceToNextPlayer();
         }
 
         updateGui();
+        scoreboard.update(playerScores);
 
         if (isRoundFinished()) {
             finishRound();
@@ -176,11 +161,9 @@ public class App extends Application {
 
     private void advanceToNextPlayer() {
         currentPlayerIdx++;
-        // If we exhausted players on this team, move to next team
         if (currentPlayerIdx >= activeTeams.get(currentTeamIdx).getPlayers().size()) {
             currentPlayerIdx = 0;
             currentTeamIdx++;
-            // If we exhausted all teams, loop back to first team
             if (currentTeamIdx >= activeTeams.size()) {
                 currentTeamIdx = 0;
             }
@@ -192,12 +175,9 @@ public class App extends Application {
     }
 
     private boolean isRoundFinished() {
-        // Round is done when EVERY active player has completed 10 frames
         for (Team t : activeTeams) {
             for (Player p : t.getPlayers()) {
-                if (playerScores.get(p).getCompletedFramesCount() < 10) {
-                    return false;
-                }
+                if (playerScores.get(p).getCompletedFramesCount() < 10) return false;
             }
         }
         return true;
@@ -205,19 +185,18 @@ public class App extends Application {
 
     private void finishRound() {
         roundOver = true;
-        
-        // 1. Update Team scores based on player performance
+
         for (Team t : activeTeams) {
             int teamTotal = t.getPlayers().stream()
-                             .mapToInt(p -> playerScores.get(p).getScore())
-                             .sum();
+                    .mapToInt(p -> playerScores.get(p).getScore())
+                    .sum();
             t.setScore(teamTotal);
         }
 
-        // 2. Tell Bracket to resolve winners
         bracket.advanceRound();
 
-        updateGui(); // Refresh to show "Winner" tags
+        updateGui();
+        scoreboard.update(playerScores);
 
         if (bracket.isTournamentOver()) {
             Team champion = bracket.getChampion();
@@ -236,13 +215,12 @@ public class App extends Application {
         scorePane.getChildren().clear();
         scorePane.getChildren().add(new Label("TOURNAMENT BOARD"));
 
-        // Iterate through MATCHUPS, not just list of teams
         for (Matchup m : bracket.getMatchups()) {
             VBox matchBox = new VBox(5);
             matchBox.setStyle("-fx-border-color: #ccc; -fx-border-width: 1px; -fx-padding: 5px; -fx-background-color: white;");
-            
+
             matchBox.getChildren().add(createTeamStats(m.getTeam1()));
-            
+
             Label vsLabel = new Label("VS");
             vsLabel.setFont(Font.font("Arial", FontWeight.BOLD, 12));
             vsLabel.setMaxWidth(Double.MAX_VALUE);
@@ -255,7 +233,6 @@ public class App extends Application {
                 matchBox.getChildren().add(new Label("(Bye Week)"));
             }
 
-            // Highlight winner if round is over
             if (roundOver) {
                 Team winner = m.getWinner();
                 Label winLabel = new Label("Winner: " + winner.getName());
@@ -267,7 +244,8 @@ public class App extends Application {
         }
 
         if (!roundOver) {
-            nowLabel.setText("Up Now: " + getCurrentPlayer().getName() + " (" + getCurrentPlayer().getTeam().getName() + ")");
+            nowLabel.setText("Up Now: " + getCurrentPlayer().getName() + " (" +
+                    getCurrentPlayer().getTeam().getName() + ")");
         } else {
             nowLabel.setText("Round Finished.");
         }
@@ -278,14 +256,12 @@ public class App extends Application {
         Label name = new Label(t.getName());
         name.setFont(Font.font("Arial", FontWeight.BOLD, 14));
         box.getChildren().add(name);
-        
+
         int teamTotal = 0;
         for (Player p : t.getPlayers()) {
-            // Get score from map, or 0 if not initialized yet
-            int s = playerScores.containsKey(p) ? playerScores.get(p).getScore() : 0;
+            int s = playerScores.getOrDefault(p, new Score()).getScore();
             teamTotal += s;
-            
-            // Marker for current player
+
             String marker = (!roundOver && p == getCurrentPlayer()) ? " ➤" : "";
             box.getChildren().add(new Label(" " + p.getName() + ": " + s + marker));
         }
