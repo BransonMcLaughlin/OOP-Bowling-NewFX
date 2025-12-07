@@ -146,9 +146,15 @@ public class App extends Application {
         String msg = s.getRollMessage(current.getName(), knocked);
         statusLabel.setText(msg);
 
+        // logic for 10th frame
         if (s.isCurrentFrameComplete()) {
             rack.resetRack();
             advanceToNextPlayer();
+        } else if (rack.getStandingCount() == 0) {
+            // This handles the 10th frame
+            // The frame isn't over (because of a strike/spare), 
+            // but we need new pins for the bonus roll.
+            rack.resetRack();
         }
 
         updateGui();
