@@ -1,3 +1,7 @@
+// Jordan Charlie, Gage Trevino, Hamza Quadri, Evan Ernst, Branson Mclaughlin
+// CSCI 3331 - 001
+// This class implements the core scoring logic for the bowling game, tracking frame progress, calculating cumulative scores with strike and spare bonuses, and formatting the output for the scoreboard.
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -22,7 +26,7 @@ public class Score {
                 return;
             }
 
-            // Check if the NEW frame will be the 10th frame (index 9)
+            // Check if the new frame will be the 10th frame (index 9)
             boolean isNextFinal = (frames.size() == 9);
 
             Frame nextFrame = new Frame(isNextFinal);

@@ -1,3 +1,7 @@
+// Jordan Charlie, Gage Trevino, Hamza Quadri, Evan Ernst, Branson Mclaughlin
+// CSCI 3331 - 001
+// This class renders the visual scoreboard component using JavaFX, displaying a real-time summary of player names, frame-by-frame roll results, and cumulative totals in a structured layout.
+
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;

@@ -1,3 +1,7 @@
+// Jordan Charlie, Gage Trevino, Hamza Quadri, Evan Ernst, Branson Mclaughlin
+// CSCI 3331 - 001
+// This class represents a single pairing in the tournament, storing references to two teams and determining the winner based on their scores or handling bye rounds.
+
 public class Matchup {
     private Team team1;
     private Team team2;
@@ -18,7 +22,7 @@ public class Matchup {
     public Team getWinner() {
         if (team2 == null) return team1; // Handle "Bye" weeks (odd number of teams)
         
-        // Tie-breaker logic can be added here, currently defaulting to team1 on ties
+        // if it is a tie breaker, then default to team 1 (i guess we could improve this later)
         return (team1.getScore() >= team2.getScore()) ? team1 : team2;
     }
 

@@ -1,3 +1,7 @@
+// Jordan Charlie, Gage Trevino, Hamza Quadri, Evan Ernst, Branson Mclaughlin
+// CSCI 3331 - 001
+// This class represents a competitive bowling team, managing its roster of players and tracking the team's collective score throughout the tournament.
+
 import java.util.List;
 
 public class Team {
