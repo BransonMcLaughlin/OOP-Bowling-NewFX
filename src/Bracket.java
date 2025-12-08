@@ -1,3 +1,7 @@
+// Jordan Charlie, Gage Trevino, Hamza Quadri, Evan Ernst, Branson Mclaughlin
+// CSCI 3331 - 001
+// This class manages the tournament structure by randomly seeding teams into matchups and advancing winners to subsequent rounds until a champion is determined.
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

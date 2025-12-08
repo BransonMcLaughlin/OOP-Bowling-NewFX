@@ -1,3 +1,7 @@
+// Jordan Charlie, Gage Trevino, Hamza Quadri, Evan Ernst, Branson Mclaughlin
+// CSCI 3331 - 001
+// This class represents a tournament participant, storing their name and associated team information.
+
 public class Player {
     
     String name;

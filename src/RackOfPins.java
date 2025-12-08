@@ -1,3 +1,7 @@
+// Jordan Charlie, Gage Trevino, Hamza Quadri, Evan Ernst, Branson Mclaughlin
+// CSCI 3331 - 001
+// This class manages the visual representation and state of the ten bowling pins using JavaFX circles arranged in a triangular formation. It handles the logic for randomly "knocking down" pins by changing their appearance and resetting the rack for new frames.
+
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.paint.Color;

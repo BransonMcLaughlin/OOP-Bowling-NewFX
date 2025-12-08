@@ -1,3 +1,7 @@
+// Jordan Charlie, Gage Trevino, Hamza Quadri, Evan Ernst, Branson Mclaughlin
+// CSCI 3331 - 001
+// This class defines the structure of a single bowling frame, storing roll results and handling completion logic for both standard and final frames.
+
 public class Frame {
     private Integer firstRoll;
     private Integer secondRoll;
@@ -34,20 +38,19 @@ public class Frame {
         return (secondRoll != null) ? secondRoll : 0;
     }
     
-    // NEW getter
     public int getThirdRoll() {
         return (thirdRoll != null) ? thirdRoll : 0;
     }
 
     public boolean isComplete() {
-        //If it's NOT the final frame, standard rules apply:
+        //If it's NOT the final frame, then continue as normal
         if (!isFinalFrame) {
             if (isStrike()) return true; 
             return firstRoll != null && secondRoll != null;
         }
 
-        //If it IS the final frame:
-        // We need at least two rolls.
+        //If it is the final frame, then
+        //we need at least two rolls.
         if (firstRoll == null || secondRoll == null) return false;
 
         // If we got a Strike or Spare, we allow a 3rd roll.

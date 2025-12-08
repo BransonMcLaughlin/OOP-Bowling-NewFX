@@ -1,4 +1,6 @@
-
+// Jordan Charlie, Gage Trevino, Hamza Quadri, Evan Ernst, Branson Mclaughlin
+// CSCI 3331 - 001
+// This class represents an individual bowling pin, maintaining its identification number and tracking whether it is currently standing or knocked down.
 
 public class Pin{
     private boolean isKnockedDown;

@@ -1,3 +1,7 @@
+// Jordan Charlie, Gage Trevino, Hamza Quadri, Evan Ernst, Branson Mclaughlin
+// CSCI 3331 - 001
+// This class serves as the main entry point for the bowling tournament application, managing the JavaFX GUI setup, game state transitions, and user interaction logic.
+
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
